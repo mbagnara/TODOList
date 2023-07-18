@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Task Manager</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f2f2f2;
+            margin: 20px;
+        }
+
+        h1 {
+            color: #333;
+        }
+
+        form {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+
+        input[type="date"],
+        input[type="text"],
+        select {
+            width: 200px;
+            padding: 5px;
+            margin-bottom: 10px;
+        }
+
+        button {
+            padding: 10px 20px;
+            margin-right: 10px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+
+        table {
+            border-collapse: collapse;
+            width: 100%;
+        }
+
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+
+        th {
+            background-color: #4CAF50;
+            color: white;
+        }
+
+        .actions button {
+            margin-right: 5px;
+            background-color: #f44336;
+        }
+
+        .actions button:first-child {
+            margin-right: 0;
+        }
+
+        tr.edit-mode td input,
+        tr.edit-mode td select {
+            display: block;
+            width: 100%;
+            padding: 3px;
+            box-sizing: border-box;
+        }
+    </style>
+</head>
+<body>
+    <h1>Task Manager</h1>
+
+    <form id="taskForm">
+        <label for="startDate">Start Date:</label>
+        <input type="date" id="startDate" required>
+
+        <label for="task">Task:</label>
+        <input type="text" id="task" maxlength="50" required>
+
+        <label for="description">Description:</label>
+        <input type="text" id="description" maxlength="200" required>
+
+        <label for="status">Status:</label>
+        <select id="status" required>
+            <option value="">Select status</option>
+            <option value="Not Initiated">Not Initiated</option>
+            <option value="Work In Progress">Work In Progress</option>
+            <option value="Completed">Completed</option>
+            <option value="Cancelled">Cancelled</option>
+        </select>
+
+        <button type="button" id="addButton">Add</button>
+        <button type="button" id="clearButton">Clear Data</button>
+    </form>
+
+    <table id="taskTable">
+        <thead>
+            <tr>
+                <th>Date</th>
+                <th>Task</th>
+                <th>Description</th>
+                <th>Status</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+        </tbody>
+    </table>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            var addButton = document.getElementById('addButton');
+            var clearButton = document.getElementById('clearButton');
+            var taskTable = document.getElementById('taskTable');
+            var form = document.getElementById('taskForm');
+
+            addButton.addEventListener('click', addTask);
+            clearButton.addEventListener('click', clearData);
+
+            function addTask() {
+                var startDate = document.getElementById('startDate').value;
+                var task = document.getElementById('task').value;
+                var description = document.getElementById('description').value;
+                var status = document.getElementById('status').value;
+
+                var row = document.createElement('tr');
+
+                var dateCell = document.createElement('td');
+                dateCell.textContent = startDate;
+                row.appendChild(dateCell);
+
+                var taskCell = document.createElement('td');
+                taskCell.textContent = task;
+                row.appendChild(taskCell);
+
+                var descriptionCell = document.createElement('td');
+                descriptionCell.textContent = description;
+                row.appendChild(descriptionCell);
+
+                var statusCell = document.createElement('td');
+                statusCell.textContent = status;
+                row.appendChild(statusCell);
+
+                var actionsCell = document.createElement('td');
+                var editButton = document.createElement('button');
+                editButton.textContent = 'Edit';
+                editButton.addEventListener('click', function() {
+                    editTask(row);
+                });
+                actionsCell.appendChild(editButton);
+
+                var deleteButton = document.createElement('button');
+                deleteButton.textContent = 'Delete';
+                deleteButton.addEventListener('click', function() {
+                    deleteTask(row);
+                });
+                actionsCell.appendChild(deleteButton);
+
+                row.appendChild(actionsCell);
+
+                document.querySelector('table tbody').appendChild(row);
+
+                clearForm();
+            }
+
+            function editTask(row) {
+                var dateCell = row.cells[0];
+                var taskCell = row.cells[1];
+                var descriptionCell = row.cells[2];
+                var statusCell = row.cells[3];
+                var actionsCell = row.cells[4];
+
+                var dateValue = dateCell.textContent;
+                var taskValue = taskCell.textContent;
+                var descriptionValue = descriptionCell.textContent;
+                var statusValue = statusCell.textContent;
+
+                dateCell.innerHTML = '<input type="date" value="' + dateValue + '">';
+                taskCell.innerHTML = '<input type="text" value="' + taskValue + '" maxlength="50">';
+                descriptionCell.innerHTML = '<input type="text" value="' + descriptionValue + '" maxlength="200">';
+                statusCell.innerHTML = '<select>' +
+                    '<option value="Not Initiated">Not Initiated</option>' +
+                    '<option value="Work In Progress">Work In Progress</option>' +
+                    '<option value="Completed">Completed</option>' +
+                    '<option value="Cancelled">Cancelled</option>' +
+                    '</select>';
+
+                var saveButton = document.createElement('button');
+                saveButton.textContent = 'Save';
+                saveButton.addEventListener('click', function() {
+                    saveTask(row);
+                });
+
+                var cancelButton = document.createElement('button');
+                cancelButton.textContent = 'Cancel';
+                cancelButton.addEventListener('click', function() {
+                    cancelEdit(row, dateValue, taskValue, descriptionValue, statusValue);
+                });
+
+                actionsCell.innerHTML = '';
+                actionsCell.appendChild(saveButton);
+                actionsCell.appendChild(cancelButton);
+            }
+
+            function saveTask(row) {
+                var dateInput = row.cells[0].querySelector('input');
+                var taskInput = row.cells[1].querySelector('input');
+                var descriptionInput = row.cells[2].querySelector('input');
+                var statusSelect = row.cells[3].querySelector('select');
+
+                var dateValue = dateInput.value;
+                var taskValue = taskInput.value;
+                var descriptionValue = descriptionInput.value;
+                var statusValue = statusSelect.value;
+
+                row.cells[0].textContent = dateValue;
+                row.cells[1].textContent = taskValue;
+                row.cells[2].textContent = descriptionValue;
+                row.cells[3].textContent = statusValue;
+
+                var actionsCell = row.cells[4];
+                actionsCell.innerHTML = '';
+
+                var editButton = document.createElement('button');
+                editButton.textContent = 'Edit';
+                editButton.addEventListener('click', function() {
+                    editTask(row);
+                });
+
+                var deleteButton = document.createElement('button');
+                deleteButton.textContent = 'Delete';
+                deleteButton.addEventListener('click', function() {
+                    deleteTask(row);
+                });
+
+                actionsCell.appendChild(editButton);
+                actionsCell.appendChild(deleteButton);
+            }
+
+            function cancelEdit(row, dateValue, taskValue, descriptionValue, statusValue) {
+                row.cells[0].textContent = dateValue;
+                row.cells[1].textContent = taskValue;
+                row.cells[2].textContent = descriptionValue;
+                row.cells[3].textContent = statusValue;
+
+                var actionsCell = row.cells[4];
+                actionsCell.innerHTML = '';
+
+                var editButton = document.createElement('button');
+                editButton.textContent = 'Edit';
+                editButton.addEventListener('click', function() {
+                    editTask(row);
+                });
+
+                var deleteButton = document.createElement('button');
+                deleteButton.textContent = 'Delete';
+                deleteButton.addEventListener('click', function() {
+                    deleteTask(row);
+                });
+
+                actionsCell.appendChild(editButton);
+                actionsCell.appendChild(deleteButton);
+            }
+
+            function deleteTask(row) {
+                row.parentNode.removeChild(row);
+            }
+
+            function clearData() {
+                document.querySelector('table tbody').innerHTML = '';
+            }
+
+            function clearForm() {
+                form.reset();
+            }
+        });
+    </script>
+</body>
+</html>
